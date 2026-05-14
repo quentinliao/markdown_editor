@@ -4,25 +4,27 @@ import { EditorView } from '@codemirror/view'
 import { buildExtensions } from './extensions'
 import { useEditorStore } from '../../store/editorStore'
 
-let saveTimer: ReturnType<typeof setTimeout> | null = null
-
 export function MarkdownEditor() {
   const containerRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const isInternalUpdateRef = useRef(false)
   const { content, setContent, setCursorLine } = useEditorStore()
 
   const handleChange = useCallback(
     (value: string) => {
+      isInternalUpdateRef.current = true
       setContent(value)
-      if (saveTimer) clearTimeout(saveTimer)
-      saveTimer = setTimeout(() => {
-        // 自动保存逻辑（Task 5 实现）
-        saveTimer = null
+      isInternalUpdateRef.current = false
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      saveTimerRef.current = setTimeout(() => {
+        saveTimerRef.current = null
       }, 500)
     },
     [setContent],
   )
 
+  // 初始化编辑器实例（仅 mount 时创建）
   useEffect(() => {
     if (!containerRef.current) return
 
@@ -44,11 +46,23 @@ export function MarkdownEditor() {
     viewRef.current = view
 
     return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
       view.destroy()
       viewRef.current = null
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  // 同步外部 content 变更（如文件打开、AI 插入）到编辑器
+  useEffect(() => {
+    const view = viewRef.current
+    if (!view || isInternalUpdateRef.current) return
+    const currentDoc = view.state.doc.toString()
+    if (currentDoc === content) return
+    view.dispatch({
+      changes: { from: 0, to: currentDoc.length, insert: content },
+    })
+  }, [content])
 
   return <div ref={containerRef} className="h-full w-full overflow-hidden" />
 }
