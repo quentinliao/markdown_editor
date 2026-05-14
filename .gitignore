@@ -3,3 +3,9 @@ dist/
 src-tauri/target/
 .DS_Store
 *.local
+.vscode/
+.idea/
+src-tauri/gen/
+.env
+.env.*
+!.env.example
