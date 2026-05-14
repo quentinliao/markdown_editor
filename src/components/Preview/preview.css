@@ -1,0 +1,214 @@
+/* 代码块 */
+.prose pre {
+  background: #1b1f23;
+  border-radius: 8px;
+  padding: 16px 20px;
+  overflow-x: auto;
+  border: 1px solid #30363d;
+}
+.dark .prose pre {
+  background: #0d1117;
+  border-color: #30363d;
+}
+.prose code {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Consolas', monospace;
+  font-size: 0.875em;
+}
+.prose pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  font-size: 0.8125em;
+  line-height: 1.7;
+  color: #e6edf3;
+}
+.dark .prose pre code {
+  color: #e6edf3;
+}
+.prose :not(pre) > code {
+  background: #eff1f3;
+  color: #1f2937;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+.dark .prose :not(pre) > code {
+  background: #374151;
+  color: #f3f4f6;
+}
+
+/* 语法高亮 - GitHub Dark 配色 */
+.hl-keyword { color: #ff7b72; font-weight: 500; }
+.hl-string { color: #a5d6ff; }
+.hl-number { color: #79c0ff; }
+.hl-comment { color: #8b949e; font-style: italic; }
+.hl-literal { color: #79c0ff; }
+.hl-type { color: #ffa657; }
+.hl-decorator { color: #d2a8ff; }
+.hl-function { color: #d2a8ff; }
+.prose pre .hl-keyword { color: #ff7b72; }
+.prose pre .hl-string { color: #a5d6ff; }
+.prose pre .hl-number { color: #79c0ff; }
+.prose pre .hl-comment { color: #8b949e; }
+.prose pre .hl-literal { color: #79c0ff; }
+.prose pre .hl-type { color: #ffa657; }
+.prose pre .hl-decorator { color: #d2a8ff; }
+
+/* 表格 */
+.prose table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1em 0;
+}
+.prose th, .prose td {
+  border: 1px solid #d0d7de;
+  padding: 6px 13px;
+}
+.prose th {
+  background: #f6f8fa;
+  font-weight: 600;
+}
+.dark .prose th {
+  background: #1e293b;
+  border-color: #334155;
+}
+.dark .prose td {
+  border-color: #334155;
+}
+
+/* 数学公式 */
+.math-block {
+  margin: 1em 0;
+  overflow-x: auto;
+  padding: 8px 0;
+  text-align: center;
+}
+.math-error {
+  color: #e53e3e;
+  font-family: monospace;
+  font-size: 0.875em;
+}
+
+/* Mermaid 图表 */
+.mermaid-chart {
+  margin: 1em auto;
+  text-align: center;
+}
+.mermaid-chart svg {
+  max-width: 100%;
+  height: auto;
+}
+.mermaid-placeholder {
+  margin: 1em 0;
+  text-align: center;
+}
+.mermaid-src {
+  text-align: left;
+  font-size: 0.8125em;
+}
+.mermaid-error {
+  border: 1px solid #e53e3e;
+  border-radius: 6px;
+  padding: 12px;
+  color: #e53e3e;
+}
+.mermaid-error pre {
+  background: none;
+  padding: 4px 0;
+}
+
+/* 引用块 */
+.prose blockquote {
+  border-left: 4px solid #d1d5db;
+  padding-left: 1em;
+  margin-left: 0;
+  color: #6b7280;
+}
+.dark .prose blockquote {
+  border-left-color: #4b5563;
+  color: #9ca3af;
+}
+
+/* 任务列表 */
+.prose input[type="checkbox"] {
+  margin-right: 6px;
+  accent-color: #3b82f6;
+}
+
+/* 水平线 */
+.prose hr {
+  border: none;
+  border-top: 2px solid #e5e7eb;
+  margin: 2em 0;
+}
+.dark .prose hr {
+  border-top-color: #374151;
+}
+
+/* 图片 */
+.prose img {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 1em 0;
+}
+
+/* 嵌入视频/iframe */
+.prose iframe {
+  max-width: 100%;
+  border-radius: 6px;
+  margin: 1em 0;
+}
+
+/* 脚注 */
+.prose sup a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+/* 标题锚点 */
+.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
+  scroll-margin-top: 48px;
+}
+
+/* 定义列表 */
+.prose dl {
+  margin: 1em 0;
+}
+.prose dt {
+  font-weight: 600;
+  margin-top: 0.5em;
+}
+.prose dd {
+  margin-left: 1.5em;
+}
+
+/* 标记/高亮 */
+.prose mark {
+  background: #fef08a;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.dark .prose mark {
+  background: #854d0e;
+  color: #fef08a;
+}
+
+/* 缩写 */
+.prose abbr[title] {
+  text-decoration: underline dotted;
+  cursor: help;
+}
+
+/* 键盘快捷键 */
+.prose kbd {
+  background: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 0.8em;
+  font-family: monospace;
+}
+.dark .prose kbd {
+  background: #374151;
+  border-color: #4b5563;
+}

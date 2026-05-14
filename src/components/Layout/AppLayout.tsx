@@ -8,10 +8,11 @@ interface AppLayoutProps {
   aiChat: ReactNode
   editor: ReactNode
   preview: ReactNode
+  toolbarProps?: { onSearchToggle?: () => void }
   statusProps: { wordCount: number; lineCount: number; filePath?: string }
 }
 
-export function AppLayout({ sidebar, aiChat, editor, preview, statusProps }: AppLayoutProps) {
+export function AppLayout({ sidebar, aiChat, editor, preview, toolbarProps, statusProps }: AppLayoutProps) {
   const { viewMode, sidebarWidth, aiPanelWidth } = useUIStore()
   const showAi = viewMode === 'full'
   const showPreview = viewMode === 'full' || viewMode === 'no-ai' || viewMode === 'preview-only'
@@ -19,7 +20,7 @@ export function AppLayout({ sidebar, aiChat, editor, preview, statusProps }: App
 
   return (
     <div className="flex flex-col h-screen bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-      <Toolbar />
+      <Toolbar {...toolbarProps} />
       <div className="flex flex-1 overflow-hidden min-h-0">
         <div
           style={{ width: sidebarWidth }}
