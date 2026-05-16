@@ -4,6 +4,7 @@ import { EditorView } from '@codemirror/view'
 import { buildExtensions } from './extensions'
 import { useEditorStore } from '../../store/editorStore'
 import { useUIStore } from '../../store/uiStore'
+import { registerEditor, unregisterEditor } from '../../lib/scrollSync'
 
 const themeCompartment = new Compartment()
 
@@ -15,9 +16,6 @@ export function MarkdownEditor() {
   const { content, setContent, setCursorLine } = useEditorStore()
   const fontSize = useUIStore((s) => s.fontSize)
   const theme = useUIStore((s) => s.theme)
-  const scrollRatio = useUIStore((s) => s.scrollRatio)
-  const scrollSource = useUIStore((s) => s.scrollSource)
-  const setScrollRatio = useUIStore((s) => s.setScrollRatio)
 
   const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
 
@@ -55,8 +53,12 @@ export function MarkdownEditor() {
     const view = new EditorView({ state, parent: containerRef.current })
     viewRef.current = view
 
+    // 注册滚动同步（直接操作 DOM，不经过 React 状态）
+    registerEditor(view.scrollDOM)
+
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current)
+      unregisterEditor(view.scrollDOM)
       view.destroy()
       viewRef.current = null
     }
@@ -80,9 +82,11 @@ export function MarkdownEditor() {
     if (fontSizeRef.current === fontSize || !viewRef.current) return
     fontSizeRef.current = fontSize
     const view = viewRef.current
+    const oldDom = view.scrollDOM
     const currentDoc = view.state.doc.toString()
     const sel = view.state.selection
     view.destroy()
+    unregisterEditor(oldDom)
 
     const state = EditorState.create({
       doc: currentDoc,
@@ -101,34 +105,8 @@ export function MarkdownEditor() {
     })
     const newView = new EditorView({ state, parent: containerRef.current! })
     viewRef.current = newView
+    registerEditor(newView.scrollDOM)
   }, [fontSize, isDark, handleChange, setCursorLine])
-
-  // 编辑器滚动 → 通知 store
-  useEffect(() => {
-    const view = viewRef.current
-    if (!view) return
-    const dom = view.scrollDOM
-    const handler = () => {
-      const { scrollTop, scrollHeight, clientHeight } = dom
-      const maxScroll = scrollHeight - clientHeight
-      if (maxScroll > 0) {
-        setScrollRatio(scrollTop / maxScroll, 'editor')
-      }
-    }
-    dom.addEventListener('scroll', handler)
-    return () => dom.removeEventListener('scroll', handler)
-  }, [content, fontSize, setScrollRatio])
-
-  // 预览滚动 → 同步编辑器
-  useEffect(() => {
-    const view = viewRef.current
-    if (!view || scrollSource !== 'preview') return
-    const dom = view.scrollDOM
-    const maxScroll = dom.scrollHeight - dom.clientHeight
-    if (maxScroll > 0) {
-      dom.scrollTop = scrollRatio * maxScroll
-    }
-  }, [scrollRatio, scrollSource])
 
   return <div ref={containerRef} className="h-full w-full overflow-hidden" />
 }

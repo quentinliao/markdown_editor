@@ -29,3 +29,31 @@ pub fn save_image(path: String, data: String) -> Result<(), String> {
     let bytes = BASE64.decode(&data).map_err(|e| e.to_string())?;
     fs::write(&path, bytes).map_err(|e| e.to_string())
 }
+
+#[command]
+pub fn rename_file(old_path: String, new_path: String) -> Result<(), String> {
+    fs::rename(&old_path, &new_path).map_err(|e| e.to_string())
+}
+
+#[command]
+pub fn delete_path(path: String) -> Result<(), String> {
+    let p = Path::new(&path);
+    if p.is_dir() {
+        fs::remove_dir_all(p).map_err(|e| e.to_string())
+    } else {
+        fs::remove_file(p).map_err(|e| e.to_string())
+    }
+}
+
+#[command]
+pub fn create_file(path: String) -> Result<(), String> {
+    if let Some(parent) = Path::new(&path).parent() {
+        fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    fs::write(&path, "").map_err(|e| e.to_string())
+}
+
+#[command]
+pub fn create_directory(path: String) -> Result<(), String> {
+    fs::create_dir_all(&path).map_err(|e| e.to_string())
+}

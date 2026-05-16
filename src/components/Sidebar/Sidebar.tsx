@@ -1,10 +1,11 @@
 import { useEffect } from 'react'
 import { useLibraryStore } from '../../store/libraryStore'
 import { LibraryTree } from './LibraryTree'
-import { FolderPlus, Trash2, ChevronRight, ChevronDown } from 'lucide-react'
+import { FolderPlus, Trash2, ChevronRight, ChevronDown, RefreshCw } from 'lucide-react'
+import { open } from '@tauri-apps/plugin-dialog'
 
 export function Sidebar() {
-  const { libraries, expandedLibraries, loadLibraries, addLibrary, removeLibrary, toggleLibrary } =
+  const { libraries, expandedLibraries, loadLibraries, addLibrary, removeLibrary, toggleLibrary, refreshFileTree } =
     useLibraryStore()
 
   useEffect(() => {
@@ -12,11 +13,16 @@ export function Sidebar() {
   }, [loadLibraries])
 
   const handleAddLibrary = async () => {
-    const name = prompt('文档库名称:')
-    if (!name) return
-    const path = prompt('文档库路径:')
-    if (!path) return
-    await addLibrary(name, path)
+    try {
+      const selected = await open({ directory: true, multiple: false })
+      if (!selected) return
+      const path = selected as string
+      // 用文件夹名作为库名
+      const name = path.split('/').pop() || '文档库'
+      await addLibrary(name, path)
+    } catch {
+      // cancelled
+    }
   }
 
   return (
@@ -50,6 +56,13 @@ export function Sidebar() {
                   <ChevronRight size={12} className="text-gray-400 flex-shrink-0" />
                 )}
                 <span className="truncate">{lib.name}</span>
+              </button>
+              <button
+                onClick={() => refreshFileTree(lib.id)}
+                className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-700"
+                title="刷新"
+              >
+                <RefreshCw size={12} className="text-gray-400" />
               </button>
               <button
                 onClick={() => removeLibrary(lib.id)}

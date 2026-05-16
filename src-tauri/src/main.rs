@@ -4,6 +4,7 @@
 mod commands;
 mod db;
 
+use commands::ai::stream_chat_request;
 use commands::file_ops::*;
 use commands::library::*;
 use commands::search::*;
@@ -11,7 +12,9 @@ use tauri::Manager;
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_shell::init())
         .setup(|app| {
             let pool = tauri::async_runtime::block_on(db::init_db(app.handle()))?;
             app.manage(pool);
@@ -22,12 +25,17 @@ fn main() {
             write_file,
             file_exists,
             save_image,
+            rename_file,
+            delete_path,
+            create_file,
+            create_directory,
             add_library,
             get_libraries,
             remove_library,
             read_directory,
             index_document,
             search_documents,
+            stream_chat_request,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

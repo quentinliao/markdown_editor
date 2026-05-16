@@ -7,7 +7,7 @@ const TEXT_COLORS = [
 ]
 
 const BG_COLORS = [
-  'transparent', '#fef9c3', '#fef08a', '#fde68a', '#fcd34d',
+  '#fef9c3', '#fef08a', '#fde68a', '#fcd34d',
   '#d1fae5', '#a7f3d0', '#bae6fd', '#bfdbfe', '#c7d2fe',
   '#ddd6fe', '#f5d0fe', '#fecdd3', '#fed7aa', '#fdba74',
 ]
@@ -24,17 +24,27 @@ export function SelectionToolbar({ onFormat }: SelectionToolbarProps) {
   const [visible, setVisible] = useState(false)
   const [position, setPosition] = useState<{ x: number; y: number } | null>(null)
   const [drop, setDrop] = useState<DropType>(null)
+  const [lastTextColor, setLastTextColor] = useState('#ef4444')
+  const [lastBgColor, setLastBgColor] = useState('#fef08a')
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const ref = useRef<HTMLDivElement>(null)
+  const savedSelectionRef = useRef<{ text: string; range: Range | null }>({ text: '', range: null })
+  // 锁定：toolbar 打开后锁定住，只在用户点击外部时才关闭
+  const lockedRef = useRef(false)
 
   const hide = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current)
     setVisible(false)
     setPosition(null)
     setDrop(null)
+    lockedRef.current = false
+    savedSelectionRef.current = { text: '', range: null }
   }, [])
 
   const scheduleShow = useCallback(() => {
+    // 如果 toolbar 已锁定显示，不重复触发
+    if (lockedRef.current) return
+
     if (timerRef.current) clearTimeout(timerRef.current)
     timerRef.current = setTimeout(() => {
       const sel = window.getSelection()
@@ -46,11 +56,19 @@ export function SelectionToolbar({ onFormat }: SelectionToolbarProps) {
       const range = sel.getRangeAt(0)
       const rect = range.getBoundingClientRect()
       if (rect.width === 0 && rect.height === 0) return
+
+      savedSelectionRef.current = {
+        text: sel.toString(),
+        range: range.cloneRange(),
+      }
+
       setPosition({
         x: rect.left + rect.width / 2,
         y: rect.top < 48 ? rect.bottom + 6 : rect.top - 42,
       })
       setVisible(true)
+      lockedRef.current = true
+      setDrop(null)
     }, 500)
   }, [])
 
@@ -60,7 +78,10 @@ export function SelectionToolbar({ onFormat }: SelectionToolbarProps) {
       if (ref.current && ref.current.contains(e.target as Node)) return
       hide()
     }
-    const onKeyDown = () => hide()
+    const onKeyDown = (e: KeyboardEvent) => {
+      // 只在按 Esc 或 Tab 时关闭，其他按键不关闭
+      if (e.key === 'Escape') hide()
+    }
 
     document.addEventListener('mouseup', onMouseUp)
     document.addEventListener('mousedown', onMouseDown)
@@ -73,23 +94,21 @@ export function SelectionToolbar({ onFormat }: SelectionToolbarProps) {
     }
   }, [scheduleShow, hide])
 
-  useEffect(() => {
-    if (!drop) return
-    const handler = (e: MouseEvent) => {
-      if (ref.current && ref.current.contains(e.target as Node)) return
-      setDrop(null)
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [drop])
-
   if (!visible || !position) return null
 
   const preventBlur = (e: React.MouseEvent) => e.preventDefault()
 
   const handleFormat = (action: string, value?: string) => {
+    if (savedSelectionRef.current.range) {
+      const sel = window.getSelection()
+      if (sel) {
+        sel.removeAllRanges()
+        sel.addRange(savedSelectionRef.current.range)
+      }
+    }
     onFormat(action, value)
-    setDrop(null)
+    // toolbar 保持锁定，不消失
+    lockedRef.current = true
   }
 
   return (
@@ -114,61 +133,100 @@ export function SelectionToolbar({ onFormat }: SelectionToolbarProps) {
 
       <Sep />
 
-      <div className="relative">
-        <ToolBtn
-          title="文字颜色"
-          active={drop === 'textColor'}
-          onClick={() => setDrop(drop === 'textColor' ? null : 'textColor')}
-        >
-          <span className="flex flex-col items-center leading-none">
-            <span className="font-bold text-[12px]">A</span>
-            <span className="mt-px h-[3px] w-3 rounded-full bg-red-500" />
+      {/* 文字颜色 */}
+      <div className="relative flex">
+        <ToolBtn title={`文字颜色: ${lastTextColor}`} onClick={() => handleFormat('color', lastTextColor)}>
+          <span className="flex items-center gap-0.5">
+            <span className="font-bold text-[13px]">A</span>
+            <span className="inline-block h-[3px] w-3 rounded-full" style={{ backgroundColor: lastTextColor }} />
           </span>
         </ToolBtn>
+        <button
+          title="选择文字颜色"
+          onMouseDown={preventBlur}
+          onClick={() => setDrop(drop === 'textColor' ? null : 'textColor')}
+          className="flex items-center justify-center w-3 h-7 rounded-r-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+        >
+          <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><path d="M1 3l3 3 3-3z" /></svg>
+        </button>
         {drop === 'textColor' && (
           <DropPanel>
-            <div className="text-[10px] text-gray-400 mb-1">文字颜色</div>
-            <div className="grid grid-cols-5 gap-1">
+            <div className="text-[10px] text-gray-400 mb-1.5">文字颜色</div>
+            <div className="grid grid-cols-5 gap-1" style={{ width: 110 }}>
               {TEXT_COLORS.map((c) => (
                 <button
                   key={c}
-                  onClick={() => handleFormat('color', c)}
-                  className="h-5 w-5 rounded border border-gray-200 dark:border-gray-600 hover:scale-125 transition-transform"
-                  style={{ backgroundColor: c }}
+                  onMouseDown={preventBlur}
+                  onClick={() => { setLastTextColor(c); handleFormat('color', c) }}
+                  className="inline-block rounded border border-gray-200 dark:border-gray-600 hover:scale-110 transition-transform"
+                  style={{ width: 18, height: 18, backgroundColor: c }}
                   title={c}
                 />
               ))}
+            </div>
+            <div className="mt-1.5 pt-1.5 border-t border-gray-200 dark:border-gray-600 flex items-center gap-1.5">
+              <input
+                type="color"
+                value={lastTextColor}
+                onChange={(e) => { setLastTextColor(e.target.value); handleFormat('color', e.target.value) }}
+                className="w-6 h-5 rounded cursor-pointer border-0 p-0"
+                onMouseDown={preventBlur}
+              />
+              <span className="text-[10px] text-gray-400">自定义</span>
             </div>
           </DropPanel>
         )}
       </div>
 
-      <div className="relative">
-        <ToolBtn
-          title="文字背景"
-          active={drop === 'bgColor'}
-          onClick={() => setDrop(drop === 'bgColor' ? null : 'bgColor')}
-        >
-          <span className="flex flex-col items-center leading-none">
-            <span className="font-bold text-[12px]">A</span>
-            <span className="mt-px h-3 w-3 rounded-sm border border-yellow-400" style={{ backgroundColor: '#fef08a' }} />
+      {/* 背景颜色 */}
+      <div className="relative flex">
+        <ToolBtn title={`背景颜色: ${lastBgColor}`} onClick={() => handleFormat('bgColor', lastBgColor)}>
+          <span className="flex items-center gap-0.5">
+            <span className="font-bold text-[13px]">A</span>
+            <span className="inline-block rounded-sm border border-gray-300" style={{ width: 12, height: 12, backgroundColor: lastBgColor }} />
           </span>
         </ToolBtn>
+        <button
+          title="选择背景颜色"
+          onMouseDown={preventBlur}
+          onClick={() => setDrop(drop === 'bgColor' ? null : 'bgColor')}
+          className="flex items-center justify-center w-3 h-7 rounded-r-sm hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-500"
+        >
+          <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><path d="M1 3l3 3 3-3z" /></svg>
+        </button>
         {drop === 'bgColor' && (
           <DropPanel>
-            <div className="text-[10px] text-gray-400 mb-1">背景颜色</div>
-            <div className="grid grid-cols-5 gap-1">
+            <div className="text-[10px] text-gray-400 mb-1.5">背景颜色</div>
+            <div className="grid grid-cols-5 gap-1" style={{ width: 110 }}>
+              <button
+                onMouseDown={preventBlur}
+                onClick={() => handleFormat('bgColor', 'transparent')}
+                className="inline-flex items-center justify-center rounded border border-gray-300 dark:border-gray-600 hover:scale-110 transition-transform bg-white"
+                style={{ width: 18, height: 18 }}
+                title="清除背景"
+              >
+                <span className="text-[7px] text-gray-400">无</span>
+              </button>
               {BG_COLORS.map((c) => (
                 <button
                   key={c}
-                  onClick={() => handleFormat('bgColor', c)}
-                  className="flex h-5 w-5 items-center justify-center rounded border border-gray-200 dark:border-gray-600 hover:scale-125 transition-transform"
-                  style={{ backgroundColor: c === 'transparent' ? '#fff' : c }}
-                  title={c === 'transparent' ? '无背景' : c}
-                >
-                  {c === 'transparent' && <span className="text-[8px] text-gray-400">无</span>}
-                </button>
+                  onMouseDown={preventBlur}
+                  onClick={() => { setLastBgColor(c); handleFormat('bgColor', c) }}
+                  className="inline-block rounded border border-gray-200 dark:border-gray-600 hover:scale-110 transition-transform"
+                  style={{ width: 18, height: 18, backgroundColor: c }}
+                  title={c}
+                />
               ))}
+            </div>
+            <div className="mt-1.5 pt-1.5 border-t border-gray-200 dark:border-gray-600 flex items-center gap-1.5">
+              <input
+                type="color"
+                value={lastBgColor}
+                onChange={(e) => { setLastBgColor(e.target.value); handleFormat('bgColor', e.target.value) }}
+                className="w-6 h-5 rounded cursor-pointer border-0 p-0"
+                onMouseDown={preventBlur}
+              />
+              <span className="text-[10px] text-gray-400">自定义</span>
             </div>
           </DropPanel>
         )}
@@ -191,6 +249,7 @@ export function SelectionToolbar({ onFormat }: SelectionToolbarProps) {
               {FONT_SIZES.map((s) => (
                 <button
                   key={s}
+                  onMouseDown={preventBlur}
                   onClick={() => handleFormat('fontSize', String(s))}
                   className="rounded px-3 py-0.5 text-left text-xs text-gray-700 dark:text-gray-300 hover:bg-blue-50 dark:hover:bg-gray-700"
                 >
@@ -240,7 +299,7 @@ function ToolBtn({
 }
 
 function Sep() {
-  return <div className="mx-0.5 h-4 w-px bg-gray-200 dark:bg-gray-600" />
+  return <div className="mx-0.5 h-4 w-px bg-gray-200 dark:border-gray-600" />
 }
 
 function DropPanel({ children }: { children: React.ReactNode }) {

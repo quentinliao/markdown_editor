@@ -1,14 +1,57 @@
-/* 代码块 */
+/* ===== CSS Variables for Theme Colors ===== */
+:root {
+  --color-heading: #0695bf;
+  --color-blockquote: #1F8D5C;
+  --color-inline-code: #1F8D5C;
+  --color-code-bg: #F7F8F8;
+}
+.dark {
+  --color-heading: #4cc9f0;
+  --color-blockquote: #34d399;
+  --color-inline-code: #34d399;
+  --color-code-bg: #1e293b;
+}
+
+/* ===== Headings ===== */
+.prose h1, .prose h2, .prose h3,
+.prose h4, .prose h5, .prose h6 {
+  color: var(--color-heading);
+  scroll-margin-top: 48px;
+}
+
+/* ===== 引用块 ===== */
+.prose blockquote {
+  border-left: 4px solid var(--color-blockquote);
+  padding-left: 1em;
+  margin-left: 0;
+  color: var(--color-blockquote);
+}
+
+/* ===== 行内代码 ===== */
+.prose :not(pre) > code {
+  color: var(--color-inline-code);
+  background: color-mix(in srgb, var(--color-inline-code) 10%, transparent);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Consolas', monospace;
+}
+/* 去掉 Tailwind Typography 默认给 code 添加的反引号 */
+.prose code::before,
+.prose code::after {
+  content: none !important;
+}
+
+/* ===== 代码块 ===== */
 .prose pre {
-  background: #1b1f23;
+  background: var(--color-code-bg);
   border-radius: 8px;
   padding: 16px 20px;
   overflow-x: auto;
-  border: 1px solid #30363d;
+  border: 1px solid #e2e8f0;
 }
 .dark .prose pre {
-  background: #0d1117;
-  border-color: #30363d;
+  border-color: #334155;
 }
 .prose code {
   font-family: 'JetBrains Mono', 'Fira Code', 'Menlo', 'Consolas', monospace;
@@ -20,41 +63,60 @@
   border-radius: 0;
   font-size: 0.8125em;
   line-height: 1.7;
-  color: #e6edf3;
+  color: #24292e;
 }
 .dark .prose pre code {
   color: #e6edf3;
 }
-.prose :not(pre) > code {
-  background: #eff1f3;
-  color: #1f2937;
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-size: 0.85em;
-}
-.dark .prose :not(pre) > code {
-  background: #374151;
-  color: #f3f4f6;
-}
 
-/* 语法高亮 - GitHub Dark 配色 */
-.hl-keyword { color: #ff7b72; font-weight: 500; }
-.hl-string { color: #a5d6ff; }
-.hl-number { color: #79c0ff; }
-.hl-comment { color: #8b949e; font-style: italic; }
-.hl-literal { color: #79c0ff; }
-.hl-type { color: #ffa657; }
-.hl-decorator { color: #d2a8ff; }
-.hl-function { color: #d2a8ff; }
-.prose pre .hl-keyword { color: #ff7b72; }
-.prose pre .hl-string { color: #a5d6ff; }
-.prose pre .hl-number { color: #79c0ff; }
-.prose pre .hl-comment { color: #8b949e; }
-.prose pre .hl-literal { color: #79c0ff; }
-.prose pre .hl-type { color: #ffa657; }
-.prose pre .hl-decorator { color: #d2a8ff; }
+/* ===== Highlight.js 主题覆盖 ===== */
+/* Light mode — GitHub-like */
+.prose pre .hljs-keyword,
+.prose pre .hljs-selector-tag,
+.prose pre .hljs-built_in { color: #d73a49; font-weight: 500; }
+.prose pre .hljs-string,
+.prose pre .hljs-template-tag,
+.prose pre .hljs-template-variable { color: #032f62; }
+.prose pre .hljs-number { color: #005cc5; }
+.prose pre .hljs-comment,
+.prose pre .hljs-doctag { color: #6a737d; font-style: italic; }
+.prose pre .hljs-literal { color: #005cc5; }
+.prose pre .hljs-type,
+.prose pre .hljs-class .hljs-title { color: #6f42c1; }
+.prose pre .hljs-meta { color: #005cc5; }
+.prose pre .hljs-function .hljs-title { color: #6f42c1; }
+.prose pre .hljs-title.function_ { color: #6f42c1; }
+.prose pre .hljs-variable,
+.prose pre .hljs-attr { color: #e36209; }
+.prose pre .hljs-symbol,
+.prose pre .hljs-bullet { color: #e36209; }
+.prose pre .hljs-addition { color: #22863a; background-color: #f0fff4; }
+.prose pre .hljs-deletion { color: #b31d28; background-color: #ffeef0; }
 
-/* 表格 */
+/* Dark mode — GitHub Dark-like */
+.dark .prose pre .hljs-keyword,
+.dark .prose pre .hljs-selector-tag,
+.dark .prose pre .hljs-built_in { color: #ff7b72; }
+.dark .prose pre .hljs-string,
+.dark .prose pre .hljs-template-tag,
+.dark .prose pre .hljs-template-variable { color: #a5d6ff; }
+.dark .prose pre .hljs-number { color: #79c0ff; }
+.dark .prose pre .hljs-comment,
+.dark .prose pre .hljs-doctag { color: #8b949e; }
+.dark .prose pre .hljs-literal { color: #79c0ff; }
+.dark .prose pre .hljs-type,
+.dark .prose pre .hljs-class .hljs-title { color: #ffa657; }
+.dark .prose pre .hljs-meta { color: #79c0ff; }
+.dark .prose pre .hljs-function .hljs-title,
+.dark .prose pre .hljs-title.function_ { color: #d2a8ff; }
+.dark .prose pre .hljs-variable,
+.dark .prose pre .hljs-attr { color: #ffa657; }
+.dark .prose pre .hljs-symbol,
+.dark .prose pre .hljs-bullet { color: #ffa657; }
+.dark .prose pre .hljs-addition { color: #aff5b4; background-color: rgba(46,160,67,0.15); }
+.dark .prose pre .hljs-deletion { color: #ffdcd7; background-color: rgba(248,81,73,0.15); }
+
+/* ===== 表格 ===== */
 .prose table {
   border-collapse: collapse;
   width: 100%;
@@ -76,7 +138,7 @@
   border-color: #334155;
 }
 
-/* 数学公式 */
+/* ===== 数学公式 ===== */
 .math-block {
   margin: 1em 0;
   overflow-x: auto;
@@ -89,7 +151,7 @@
   font-size: 0.875em;
 }
 
-/* Mermaid 图表 */
+/* ===== Mermaid 图表 ===== */
 .mermaid-chart {
   margin: 1em auto;
   text-align: center;
@@ -117,25 +179,62 @@
   padding: 4px 0;
 }
 
-/* 引用块 */
-.prose blockquote {
-  border-left: 4px solid #d1d5db;
-  padding-left: 1em;
-  margin-left: 0;
-  color: #6b7280;
+/* ===== GeoJSON / TopoJSON 地图 ===== */
+.geojson-wrapper {
+  margin: 1em 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #d1d5db;
 }
-.dark .prose blockquote {
-  border-left-color: #4b5563;
-  color: #9ca3af;
+.dark .geojson-wrapper {
+  border-color: #374151;
+}
+.geojson-map {
+  width: 100%;
+  height: 400px;
+  min-height: 400px;
 }
 
-/* 任务列表 */
+/* ===== STL 3D 模型 ===== */
+.stl-wrapper {
+  margin: 1em 0;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #d1d5db;
+}
+.dark .stl-wrapper {
+  border-color: #374151;
+}
+.stl-canvas {
+  display: block;
+  width: 100%;
+  height: 400px;
+}
+
+/* ===== Chart 图表（印象笔记语法）===== */
+.chart-wrapper {
+  margin: 1em 0;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: white;
+}
+.dark .chart-wrapper {
+  border-color: #374151;
+  background: #1e293b;
+}
+.chart-canvas {
+  width: 100% !important;
+  max-height: 400px;
+}
+
+/* ===== 任务列表 ===== */
 .prose input[type="checkbox"] {
   margin-right: 6px;
   accent-color: #3b82f6;
 }
 
-/* 水平线 */
+/* ===== 水平线 ===== */
 .prose hr {
   border: none;
   border-top: 2px solid #e5e7eb;
@@ -145,32 +244,27 @@
   border-top-color: #374151;
 }
 
-/* 图片 */
+/* ===== 图片 ===== */
 .prose img {
   max-width: 100%;
   border-radius: 6px;
   margin: 1em 0;
 }
 
-/* 嵌入视频/iframe */
+/* ===== 嵌入视频/iframe ===== */
 .prose iframe {
   max-width: 100%;
   border-radius: 6px;
   margin: 1em 0;
 }
 
-/* 脚注 */
+/* ===== 脚注 ===== */
 .prose sup a {
   color: #3b82f6;
   text-decoration: none;
 }
 
-/* 标题锚点 */
-.prose h1, .prose h2, .prose h3, .prose h4, .prose h5, .prose h6 {
-  scroll-margin-top: 48px;
-}
-
-/* 定义列表 */
+/* ===== 定义列表 ===== */
 .prose dl {
   margin: 1em 0;
 }
@@ -182,7 +276,7 @@
   margin-left: 1.5em;
 }
 
-/* 标记/高亮 */
+/* ===== 标记/高亮 ===== */
 .prose mark {
   background: #fef08a;
   padding: 1px 4px;
@@ -193,13 +287,13 @@
   color: #fef08a;
 }
 
-/* 缩写 */
+/* ===== 缩写 ===== */
 .prose abbr[title] {
   text-decoration: underline dotted;
   cursor: help;
 }
 
-/* 键盘快捷键 */
+/* ===== 键盘快捷键 ===== */
 .prose kbd {
   background: #f3f4f6;
   border: 1px solid #d1d5db;
@@ -211,4 +305,20 @@
 .dark .prose kbd {
   background: #374151;
   border-color: #4b5563;
+}
+
+/* ===== 超链接 ===== */
+.prose a {
+  color: #0969da;
+  text-decoration: none;
+  cursor: pointer;
+}
+.prose a:hover {
+  text-decoration: underline;
+}
+.dark .prose a {
+  color: #58a6ff;
+}
+.dark .prose a:hover {
+  text-decoration: underline;
 }

@@ -3,10 +3,12 @@ import { languages } from '@codemirror/language-data'
 import { oneDark } from '@codemirror/theme-one-dark'
 import { EditorView, keymap, lineNumbers, highlightActiveLine } from '@codemirror/view'
 import { defaultKeymap, history, historyKeymap } from '@codemirror/commands'
-import { bracketMatching } from '@codemirror/language'
+import { bracketMatching, HighlightStyle, syntaxHighlighting } from '@codemirror/language'
+import { tags as t } from '@lezer/highlight'
 import { Extension } from '@codemirror/state'
 import { fileOps } from '../../lib/tauri'
 import { useEditorStore } from '../../store/editorStore'
+import { useThemeColorStore } from '../../store/themeStore'
 
 function dataUrlToBase64(dataUrl: string): string {
   return dataUrl.split(',')[1] || ''
@@ -104,13 +106,20 @@ const pasteExtension = EditorView.domEventHandlers({
 
         try {
           if (isTauri()) {
-            const base64 = dataUrlToBase64(dataUrl)
-            const filePath = useEditorStore.getState().filePath
-            const dir = filePath ? filePath.substring(0, filePath.lastIndexOf('/')) : '.'
-            const savePath = `${dir}/assets/${fileName}`
-            await fileOps.saveImage(savePath, base64)
-            const text = `![${fileName}](${savePath})`
-            view.dispatch({ changes: { from: cursor, insert: text }, selection: { anchor: cursor + text.length } })
+            const currentFilePath = useEditorStore.getState().filePath
+            if (currentFilePath) {
+              // 有打开的文件 → 保存图片到同目录的 assets/ 下
+              const dir = currentFilePath.substring(0, currentFilePath.lastIndexOf('/'))
+              const savePath = `${dir}/assets/${fileName}`
+              const base64 = dataUrlToBase64(dataUrl)
+              await fileOps.saveImage(savePath, base64)
+              const text = `![${fileName}](${savePath})`
+              view.dispatch({ changes: { from: cursor, insert: text }, selection: { anchor: cursor + text.length } })
+            } else {
+              // 没有打开文件 → 用 data URL 内嵌，避免写入不可控路径
+              const text = `![${fileName}](${dataUrl})`
+              view.dispatch({ changes: { from: cursor, insert: text }, selection: { anchor: cursor + text.length } })
+            }
           } else {
             const text = `![${fileName}](${dataUrl})`
             view.dispatch({ changes: { from: cursor, insert: text }, selection: { anchor: cursor + text.length } })
@@ -163,7 +172,42 @@ export const baseTheme = EditorView.theme({
   '.cm-gutters': { borderRight: '1px solid #e2e8f0' },
 })
 
+/** 根据主题颜色创建 Markdown 高亮样式 */
+function createMarkdownHighlight(colors: { heading: string; blockquote: string; inlineCode: string }): Extension {
+  return syntaxHighlighting(
+    HighlightStyle.define([
+      // 标题颜色
+      { tag: t.heading1, color: colors.heading, fontWeight: '700', fontSize: '1.6em', lineHeight: '1.3' },
+      { tag: t.heading2, color: colors.heading, fontWeight: '700', fontSize: '1.4em', lineHeight: '1.3' },
+      { tag: t.heading3, color: colors.heading, fontWeight: '600', fontSize: '1.2em', lineHeight: '1.3' },
+      { tag: t.heading4, color: colors.heading, fontWeight: '600', fontSize: '1.1em' },
+      { tag: t.heading5, color: colors.heading, fontWeight: '600' },
+      { tag: t.heading6, color: colors.heading, fontWeight: '600' },
+      // 标题标记（#号）
+      { tag: t.heading, color: colors.heading, fontWeight: '700' },
+      // 引用块
+      { tag: t.quote, color: colors.blockquote },
+      // 行内代码
+      { tag: t.monospace, color: colors.inlineCode },
+      // 链接
+      { tag: t.link, color: '#0969da', textDecoration: 'underline' },
+      { tag: t.url, color: '#0969da' },
+      // 强调
+      { tag: t.strong, fontWeight: '700' },
+      { tag: t.emphasis, fontStyle: 'italic' },
+      // 删除线
+      { tag: t.strikethrough, textDecoration: 'line-through' },
+      // 列表
+      { tag: t.list, color: '#6b7280' },
+    ]),
+  )
+}
+
 export function buildExtensions(isDark: boolean, fontSize?: number): Extension[] {
+  const themeColors = useThemeColorStore.getState()
+  const colors = isDark ? themeColors.darkColors : themeColors.lightColors
+  const mdHighlight = createMarkdownHighlight(colors)
+
   const theme = fontSize
     ? EditorView.theme({
         '&': { height: '100%', fontSize: `${fontSize}px` },
@@ -175,6 +219,7 @@ export function buildExtensions(isDark: boolean, fontSize?: number): Extension[]
         '.cm-gutters': { borderRight: '1px solid #e2e8f0' },
       })
     : baseTheme
+
   return [
     lineNumbers(),
     highlightActiveLine(),
@@ -184,6 +229,7 @@ export function buildExtensions(isDark: boolean, fontSize?: number): Extension[]
     keymap.of([...defaultKeymap, ...historyKeymap]),
     pasteExtension,
     theme,
+    mdHighlight,
     ...(isDark ? [oneDark] : []),
   ]
 }
