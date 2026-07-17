@@ -1,6 +1,6 @@
 {
   "productName": "Markdown Preview",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "identifier": "com.markdown-preview.app",
   "build": {
     "frontendDist": "../dist",

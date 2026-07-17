@@ -30,6 +30,7 @@ import shell from 'highlight.js/lib/languages/shell'
 import diff from 'highlight.js/lib/languages/diff'
 import plaintext from 'highlight.js/lib/languages/plaintext'
 import { useEditorStore } from '../../store/editorStore'
+import { useUIStore } from '../../store/uiStore'
 import { SelectionToolbar } from '../Editor/SelectionToolbar'
 import { CanvasBlock, CanvasData } from '../Canvas/CanvasBlock'
 import { registerPreview, unregisterPreview } from '../../lib/scrollSync'
@@ -266,6 +267,7 @@ interface MarkdownPreviewProps {
 
 export function MarkdownPreview({ content }: MarkdownPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null)
+  const theme = useUIStore((s) => s.theme)
 
   const handleFormat = useCallback((action: string, value?: string) => {
     const sel = window.getSelection()
@@ -350,8 +352,24 @@ export function MarkdownPreview({ content }: MarkdownPreviewProps) {
     const mermaidBlocks = container.querySelectorAll('.mermaid-wrapper')
     if (mermaidBlocks.length === 0) return
 
+    // 配色/文字色走 mermaid theme 机制：light=default（淡紫），dark=dark
+    // 字号/字体通过 themeVariables 纳入主题，不硬编码到 CSS
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+    const isDark = theme === 'dark' || (theme === 'system' && prefersDark)
+    const mermaidConfig = {
+      startOnLoad: false,
+      theme: isDark ? 'dark' : 'default',
+      securityLevel: 'loose',
+      themeVariables: {
+        fontSize: '16px',
+        fontFamily: 'system-ui, -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif',
+      },
+    }
+
     const existing = (window as any).mermaid
     if (existing) {
+      // 主题变化时重新 initialize，否则沿用旧主题渲染
+      existing.initialize(mermaidConfig)
       renderMermaid(mermaidBlocks)
       return
     }
@@ -360,16 +378,12 @@ export function MarkdownPreview({ content }: MarkdownPreviewProps) {
     s.onload = () => {
       const m = (window as any).mermaid
       if (!m) return
-      m.initialize({
-        startOnLoad: false,
-        theme: document.documentElement.classList.contains('dark') ? 'dark' : 'default',
-        securityLevel: 'loose',
-      })
+      m.initialize(mermaidConfig)
       renderMermaid(mermaidBlocks)
     }
     document.head.appendChild(s)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mermaidFingerprint])
+  }, [mermaidFingerprint, theme])
 
   // 渲染 GeoJSON / TopoJSON 地图
   useEffect(() => {
@@ -651,7 +665,9 @@ async function renderMermaid(blocks: NodeListOf<Element>) {
   const nonce = Date.now()
   let idx = 0
   for (const block of blocks) {
-    const code = decodeURIComponent(block.getAttribute('data-code') || '')
+    let code = decodeURIComponent(block.getAttribute('data-code') || '')
+    // 兼容 <tsN> 时间戳占位符：转义为 HTML 实体，避免被 Mermaid 当作 HTML 标签导致整图渲染失败
+    code = code.replace(/<(ts\d+)>/g, '&lt;$1&gt;')
     const baseId = block.getAttribute('data-id') || ''
     // 每次渲染用唯一 ID，避免 mermaid 缓存冲突
     const uniqueId = `${baseId}-${nonce}-${idx++}`

@@ -203,7 +203,21 @@ function createMarkdownHighlight(colors: { heading: string; blockquote: string; 
   )
 }
 
-export function buildExtensions(isDark: boolean, fontSize?: number): Extension[] {
+/** 与主题/字号无关的静态扩展 */
+export function buildStaticExtensions(): Extension[] {
+  return [
+    lineNumbers(),
+    highlightActiveLine(),
+    history(),
+    bracketMatching(),
+    markdown({ base: markdownLanguage, codeLanguages: languages }),
+    keymap.of([...defaultKeymap, ...historyKeymap]),
+    pasteExtension,
+  ]
+}
+
+/** 主题相关扩展：字号/字体 + Markdown 语法高亮配色 + 暗色主题。主题切换时 reconfigure */
+export function buildThemeExtensions(isDark: boolean, fontSize?: number): Extension[] {
   const themeColors = useThemeColorStore.getState()
   const colors = isDark ? themeColors.darkColors : themeColors.lightColors
   const mdHighlight = createMarkdownHighlight(colors)
@@ -220,16 +234,5 @@ export function buildExtensions(isDark: boolean, fontSize?: number): Extension[]
       })
     : baseTheme
 
-  return [
-    lineNumbers(),
-    highlightActiveLine(),
-    history(),
-    bracketMatching(),
-    markdown({ base: markdownLanguage, codeLanguages: languages }),
-    keymap.of([...defaultKeymap, ...historyKeymap]),
-    pasteExtension,
-    theme,
-    mdHighlight,
-    ...(isDark ? [oneDark] : []),
-  ]
+  return [theme, mdHighlight, ...(isDark ? [oneDark] : [])]
 }

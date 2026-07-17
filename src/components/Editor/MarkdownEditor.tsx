@@ -1,7 +1,7 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { EditorState, Compartment } from '@codemirror/state'
 import { EditorView } from '@codemirror/view'
-import { buildExtensions } from './extensions'
+import { buildStaticExtensions, buildThemeExtensions } from './extensions'
 import { useEditorStore } from '../../store/editorStore'
 import { useUIStore } from '../../store/uiStore'
 import { registerEditor, unregisterEditor } from '../../lib/scrollSync'
@@ -17,7 +17,17 @@ export function MarkdownEditor() {
   const fontSize = useUIStore((s) => s.fontSize)
   const theme = useUIStore((s) => s.theme)
 
-  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+  // system 主题下实时跟随系统深浅色偏好
+  const [prefersDark, setPrefersDark] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches,
+  )
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: dark)')
+    const handler = () => setPrefersDark(mq.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+  const isDark = theme === 'dark' || (theme === 'system' && prefersDark)
 
   const handleChange = useCallback(
     (value: string) => {
@@ -38,8 +48,8 @@ export function MarkdownEditor() {
     const state = EditorState.create({
       doc: content,
       extensions: [
-        ...buildExtensions(isDark, fontSize),
-        themeCompartment.of([]),
+        ...buildStaticExtensions(),
+        themeCompartment.of(buildThemeExtensions(isDark, fontSize)),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) {
             handleChange(update.state.doc.toString())
@@ -76,37 +86,14 @@ export function MarkdownEditor() {
     })
   }, [content])
 
-  // 字体大小变化时重建编辑器
-  const fontSizeRef = useRef(fontSize)
+  // 主题或字号变化时动态 reconfigure（不重建编辑器，保留撤销历史与光标）
   useEffect(() => {
-    if (fontSizeRef.current === fontSize || !viewRef.current) return
-    fontSizeRef.current = fontSize
     const view = viewRef.current
-    const oldDom = view.scrollDOM
-    const currentDoc = view.state.doc.toString()
-    const sel = view.state.selection
-    view.destroy()
-    unregisterEditor(oldDom)
-
-    const state = EditorState.create({
-      doc: currentDoc,
-      selection: sel,
-      extensions: [
-        ...buildExtensions(isDark, fontSize),
-        themeCompartment.of([]),
-        EditorView.updateListener.of((update) => {
-          if (update.docChanged) {
-            handleChange(update.state.doc.toString())
-          }
-          const line = update.state.doc.lineAt(update.state.selection.main.head)
-          setCursorLine(line.number)
-        }),
-      ],
+    if (!view) return
+    view.dispatch({
+      effects: themeCompartment.reconfigure(buildThemeExtensions(isDark, fontSize)),
     })
-    const newView = new EditorView({ state, parent: containerRef.current! })
-    viewRef.current = newView
-    registerEditor(newView.scrollDOM)
-  }, [fontSize, isDark, handleChange, setCursorLine])
+  }, [fontSize, isDark])
 
   return <div ref={containerRef} className="h-full w-full overflow-hidden" />
 }
